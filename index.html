@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <base target="_top">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Belize Marine Conservation Dashboard</title>
+    <!-- Load Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /*
+         * --------------------------------------------------------
+         * 1. THEME DEFINITIONS (CSS Custom Properties)
+         * --------------------------------------------------------
+         */
+
+        /* Night Mode (Default) - Dark, Marine Colors */
+        :root {
+            /* General */
+            --bg-primary: #073B4C; /* Deep Teal/Navy */
+            --bg-card: #118AB2; /* Bright Teal Card */
+            --bg-header: #1F2937; /* Gray 800 */
+            --text-main: #E0FBFC; /* Light Cyan */
+            --text-subtle: #A0AEC0; /* Gray 400 */
+            --border-accent: #118AB2; /* Bright Teal Accent */
+            --bg-bar: #073B4C; /* Bar Track */
+            --bg-table-header: #374151; /* Gray 700 */
+            --bg-table-row-hover: #374151; /* Gray 700 */
+
+            /* Fixed Progress/Accent Colors (Keep consistent across themes) */
+            --color-yellow-accent: #FFD166;
+            --color-yellow-light: #FFF2C9; 
+            --color-green-accent: #06D6A0;
+            --color-blue-light: #1CD7FF;
+            --color-red: #EF476F;
+            --color-red-light: #F87171;
+            --color-orange: #FF9F1C;
+            --color-orange-light: #FFC16E;
+            --color-dark-blue: #1C4E80;
+        }
+
+        /* Day Mode - Light, Warmer Colors */
+        .day-mode {
+            /* General */
+            --bg-primary: #F7F4E8; /* Light Sand/Cream */
+            --bg-card: #FFFFFF; /* White Card */
+            --bg-header: #E0E0E0; /* Light Gray */
+            --text-main: #073B4C; /* Deep Teal Text */
+            --text-subtle: #5A6A7E; /* Dark Gray Subtle */
+            --border-accent: #FF9F1C; /* Orange Accent */
+            --bg-bar: #EBEBEB; /* Lightest Gray Bar Track */
+            --bg-table-header: #C0C0C0; /* Light Gray Header */
+            --bg-table-row-hover: #F0F0F0; /* Very Light Gray Hover */
+        }
+
+
+        /* * --------------------------------------------------------
+         * 2. GLOBAL STYLES & REFACTORING TAILWIND
+         * --------------------------------------------------------
+         */
+        
+        /* Apply variables to core elements */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-primary); 
+            color: var(--text-main); 
+            transition: background-color 0.5s, color 0.5s;
+        }
+        
+        /* Custom scrollbar for aesthetics (use fixed dark colors) */
+        body::-webkit-scrollbar { width: 8px; }
+        body::-webkit-scrollbar-track { background: #073B4C; }
+        body::-webkit-scrollbar-thumb { background-color: #118AB2; border-radius: 20px; border: 2px solid #073B4C; }
+
+        /* Tooltip styles */
+        #custom-tooltip {
+            position: fixed;
+            z-index: 50; /* Tailwind z-50 */
+            pointer-events: none; /* Allows clicks to pass through */
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .tooltip-visible {
+            opacity: 1 !important;
+        }
+
+        /* Ensure smooth flow for stacked bars without internal rounding */
+        .bar-segment {
+            transition: width 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="dashboard-container" class="max-w-7xl mx-auto space-y-8">
+
+        <!-- Header Section -->
+        <header id="main-header" class="p-6 rounded-xl shadow-2xl border-b-4" 
+                style="background-color: var(--bg-header); border-color: var(--border-accent);">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div class="mb-4 md:mb-0">
+                    <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight" 
+                        style="color: var(--color-green-accent);">
+                        Belize Conservation Commitments and Targets
+                    </h1>
+                    <p class="text-xl mt-2" style="color: var(--text-subtle);">
+                        Monitoring progress towards the 30x30 Target and conservation targets.
+                    </p>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle" class="px-4 py-2 rounded-full font-semibold text-sm transition duration-300 shadow-md"
+                        style="background-color: var(--border-accent); color: var(--bg-primary);">
+                    <span id="toggle-icon">🌙</span> Night Mode
+                </button>
+            </div>
+        </header>
+
+        <!-- Key Metrics Cards -->
+        <section id="metrics" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            
+            <!-- Card 1: Area Targets (BSOP TARGETS) -->
+            <div class="p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300" 
+                 style="background-color: var(--bg-card); color: var(--text-main);">
+                <p class="text-sm uppercase font-semibold border-b pb-2 mb-4" 
+                   style="color: var(--text-subtle); border-color: var(--text-subtle);">Belize Sustainable Ocean Plan (BSOP) Targets</p>
+
+                <!-- Target Bar 1: MPA Coverage Progress (Yellow) - Target: 30% -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">MPA Coverage (30x30)</p>
+                        <span class="text-xl font-bold" style="color: var(--color-yellow-accent);" id="metric-coverage-percent">25.05%</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <div class="h-2.5 rounded-full" style="width: 83.5%; background-color: var(--color-yellow-accent);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Target: 30% of Marine Area by 2030</p>
+                </div>
+
+                <!-- Target Bar 2: High Biodiversity Protection Zones (Green) - Target: 15% -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">High Biodiversity Protection Zones</p>
+                        <span class="text-xl font-bold" style="color: var(--color-green-accent);" id="metric-high-bio-percent">11.6%</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <div class="h-2.5 rounded-full" style="width: 77.3%; background-color: var(--color-green-accent);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Target: 15% of Marine Area</p>
+                </div>
+                
+                <!-- Target Bar 3: Medium Protection Zones (Light Blue) - Target: 15% -->
+                <div class="mb-0">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Medium Protection Zones</p>
+                        <span class="text-xl font-bold" style="color: var(--color-blue-light);" id="metric-medium-protection-percent">13.45%</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <div class="h-2.5 rounded-full" style="width: 89.7%; background-color: var(--color-blue-light);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Target: 15% of Marine Area</p>
+                </div>
+            </div>
+
+            <!-- Card 2: Ecosystem Health/HABITAT Targets (UPDATED STACKED BARS) -->
+            <div class="p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300"
+                 style="background-color: var(--bg-card); color: var(--text-main);">
+                <p class="text-sm uppercase font-semibold border-b pb-2 mb-4" 
+                   style="color: var(--text-subtle); border-color: var(--text-subtle);">Ecosystem Health Goals</p>
+                
+                <!-- Target Bar 1: Coral Cover (Stacked Protection Levels) -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Coral Cover</p>
+                        <span class="text-xl font-bold" style="color: var(--color-red);" id="metric-coral">45%</span>
+                    </div>
+                    <!-- Bar Container (100% width) with stacked segments -->
+                    <div class="w-full rounded-full h-2.5 mt-2 flex overflow-hidden" style="background-color: var(--bg-bar);">
+                        <!-- High Protection (20%) - Darker Red (#EF476F) -->
+                        <div class="bar-segment h-full" style="width: 20%; background-color: var(--color-red);" data-percentage="20%" data-protection="High Protection"></div>
+                        <!-- Medium Protection (25%) - Lighter Red/Pink (#F87171) -->
+                        <div class="bar-segment h-full" style="width: 25%; background-color: var(--color-red-light);" data-percentage="25%" data-protection="Medium Protection"></div>
+                        <!-- Remaining 55% unfilled -->
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Target: 75% (Good/Excellent Condition) | 20% High Protection, 25% Medium Protection</p>
+                </div>
+
+                <!-- Target Bar 2: Seagrass Cover (Stacked Protection Levels) -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Seagrass Cover</p>
+                        <span class="text-xl font-bold" style="color: var(--color-green-accent);" id="metric-seagrass">75%</span>
+                    </div>
+                    <!-- Bar Container (100% width) with stacked segments -->
+                    <div class="w-full rounded-full h-2.5 mt-2 flex overflow-hidden" style="background-color: var(--bg-bar);">
+                        <!-- High Protection (50%) - Dark Green (#06D6A0) -->
+                        <div class="bar-segment h-full" style="width: 50%; background-color: var(--color-green-accent);" data-percentage="50%" data-protection="High Protection"></div>
+                        <!-- Medium Protection (25%) - Light Green (#79E8C7) -->
+                        <div class="bar-segment h-full" style="width: 25%; background-color: #79E8C7;" data-percentage="25%" data-protection="Medium Protection"></div>
+                        <!-- Remaining 25% unfilled -->
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Target: 100% (High Ecological Condition) | 50% High Protection, 25% Medium Protection</p>
+                </div>
+
+                <!-- Target Bar 3: Mangrove and Littoral Forest (Stacked Protection Levels) -->
+                <div class="mb-0">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Mangrove and Littoral Forest</p>
+                        <span class="text-xl font-bold" style="color: var(--color-orange);" id="metric-mangrove">60%</span>
+                    </div>
+                    <!-- Bar Container (100% width) with stacked segments -->
+                    <div class="w-full rounded-full h-2.5 mt-2 flex overflow-hidden" style="background-color: var(--bg-bar);">
+                        <!-- High Protection (10%) - Dark Orange (#FF9F1C) -->
+                        <div class="bar-segment h-full" style="width: 10%; background-color: var(--color-orange);" data-percentage="10%" data-protection="High Protection"></div>
+                        <!-- Medium Protection (50%) - Light Orange (#FFC16E) -->
+                        <div class="bar-segment h-full" style="width: 50%; background-color: var(--color-orange-light);" data-percentage="50%" data-protection="Medium Protection"></div>
+                        <!-- Remaining 40% unfilled -->
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Target: 100% (No Net Loss of Extent) | 10% High Protection, 50% Medium Protection</p>
+                </div>
+            </div>
+            
+            <!-- Card 3: Action Plan Progress / Tracking -->
+            <div class="p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300"
+                 style="background-color: var(--bg-card); color: var(--text-main);">
+                <p class="text-sm uppercase font-semibold border-b pb-2 mb-4" 
+                   style="color: var(--text-subtle); border-color: var(--text-subtle);">Resilient Bold Belize (RBB) Targets</p>
+                
+                <!-- Progress Bar 1: Coral Full Protection Target (4% / 20% Target) -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Coral Full Protection Target</p>
+                        <span class="text-xl font-bold" style="color: var(--color-green-accent);" id="metric-coral-full-protection">4% of 20%</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <div class="h-2.5 rounded-full" style="width: 20%; background-color: var(--color-green-accent);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Achieved full protection status for coral habitat (Target: 20%)</p>
+                </div>
+                
+                <!-- Progress Bar 2: Deep Sea Target (2.3% / 5% Target) -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Deep Sea Target</p>
+                        <span class="text-xl font-bold" style="color: var(--color-blue-light);" id="metric-deep-sea-progress">2.3% of 5%</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <div class="h-2.5 rounded-full" style="width: 46%; background-color: var(--color-blue-light);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Designated protection area for Deep Sea habitats (Target: 5%)</p>
+                </div>
+                
+                <!-- Progress Bar 3: Ocean Space (6% / 8% Target) - NEW BAR -->
+                <div class="mb-0">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Ocean Space</p>
+                        <span class="text-xl font-bold" style="color: var(--color-dark-blue);" id="metric-ocean-space-progress">6% of 8%</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <div class="h-2.5 rounded-full" style="width: 75%; background-color: var(--color-dark-blue);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Percentage of ocean space under active tracking (Target: 8%)</p>
+                </div>
+            </div>
+
+            <!-- Card 4: Proposed Full Protection Zones Summary (REVISED with two tracking bars) -->
+            <div class="p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300"
+                 style="background-color: var(--bg-card); color: var(--text-main);">
+                <p class="text-sm uppercase font-semibold border-b pb-2 mb-4" 
+                   style="color: var(--text-subtle); border-color: var(--text-subtle);">Proposed Full Protection Zones Summary</p>
+                
+                <!-- New Bar 1: Proposed Zones (Coral Target) - NOW STACKED BAR -->
+                <div class="mb-5">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Proposed Zones (Coral Target)</p>
+                        <span class="text-xl font-bold" style="color: var(--color-yellow-accent);" id="metric-coral-proposed-progress">23% of 20%</span>
+                    </div>
+                    <!-- Bar container. Scale is 25% max for visual cleanliness (23/25 = 92% fill) -->
+                    <div class="w-full rounded-full h-2.5 mt-2 flex overflow-hidden" style="background-color: var(--bg-bar);">
+                        <!-- Segment 1: Achieved 4% (4/25 = 16% width). Bright Yellow. -->
+                        <div class="bar-segment h-full" 
+                             style="width: 16%; background-color: var(--color-yellow-accent);" 
+                             data-percentage="4%" 
+                             data-protection="Current Coral Full Protection">
+                        </div>
+                        <!-- Segment 2: Proposed Incremental 19% (19/25 = 76% width). Lighter Yellow. -->
+                        <div class="bar-segment h-full" 
+                             style="width: 76%; background-color: var(--color-yellow-light);" 
+                             data-percentage="19%" 
+                             data-protection="Proposed Zones (Corals Under Full Protection)">
+                        </div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Achieved and Proposed protection area towards 20% habitat goal</p>
+                </div>
+
+                <!-- New Bar 2: Total Area Designated (Hypothetical) -->
+                <div class="mb-0">
+                    <div class="flex items-center justify-between">
+                        <p class="font-semibold text-sm">Designated Area (Hectares)</p>
+                        <span class="text-xl font-bold" style="color: var(--color-green-accent);" id="metric-designated-area">5,000 ha</span>
+                    </div>
+                    <div class="w-full rounded-full h-2.5 mt-2" style="background-color: var(--bg-bar);">
+                        <!-- 50% progress (5,000/10,000) -->
+                        <div class="h-2.5 rounded-full" style="width: 50%; background-color: var(--color-green-accent);"></div>
+                    </div>
+                    <p class="text-xs mt-1" style="color: var(--text-subtle);">Goal: 10,000 ha of new Fully Protected Area</p>
+                </div>
+            </div>
+            
+        </section>
+
+        <!-- Charts and Detailed Status Section - 3 EQUAL COLUMNS -->
+        <section id="charts" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Box 1 (Left): Detailed Conservation Status -->
+            <div class="p-6 rounded-xl shadow-2xl space-y-4"
+                 style="background-color: var(--bg-header); color: var(--text-main);">
+                <h2 class="text-2xl font-semibold border-b pb-2" style="border-color: var(--text-subtle);">Detailed Conservation Status</h2>
+                <div id="detailed-status" class="h-80 flex items-center justify-center rounded-lg border-2 border-dashed"
+                     style="color: var(--text-subtle); background-color: var(--bg-bar); border-color: var(--text-subtle);">
+                    <p class="text-center p-4">
+                        [This space is reserved for future detailed data or interactive maps]
+                    </p>
+                </div>
+            </div>
+
+            <!-- Box 2 (Middle): MPA Management Effectiveness -->
+            <div class="p-6 rounded-xl shadow-2xl space-y-4"
+                 style="background-color: var(--bg-header); color: var(--text-main);">
+                <h2 class="text-2xl font-semibold border-b pb-2" style="border-color: var(--text-subtle);">MPA Management Status (NPAS-MEE)</h2>
+                <div id="chart-management" class="h-80 flex items-center justify-center rounded-lg border-2 border-dashed"
+                     style="color: var(--text-subtle); background-color: var(--bg-bar); border-color: var(--text-subtle);">
+                    <p class="text-center p-4">
+                        [Placeholder for Data Visualization]<br>
+                        Management Effectiveness Score Distribution (e.g., Good, Fair, Poor)<br>
+                        <span style="color: var(--color-green-accent);" class="text-sm mt-1 block">Data required: Count of MPAs per management category.</span>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Box 3 (Right): Fisheries/Ecosystem Health Indicators -->
+            <div class="p-6 rounded-xl shadow-2xl space-y-4"
+                 style="background-color: var(--bg-header); color: var(--text-main);">
+                <h2 class="text-2xl font-semibold border-b pb-2" style="border-color: var(--text-subtle);">Fisheries/Ecosystem Health Indicators</h2>
+                <div id="chart-new-right" class="h-80 flex items-center justify-center rounded-lg border-2 border-dashed"
+                     style="color: var(--text-subtle); background-color: var(--bg-bar); border-color: var(--text-subtle);">
+                    <p class="text-center p-4">
+                        [Placeholder for Data Visualization]<br>
+                        Tracking key fish stocks or coral reef health trends.<br>
+                        <span style="color: var(--color-yellow-accent);" class="text-sm mt-1 block">Placeholder for chart content.</span>
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Table/Detail View Section (Original content retained) -->
+        <section id="details" class="p-6 rounded-xl shadow-2xl"
+                 style="background-color: var(--bg-header); color: var(--text-main);">
+            <h2 class="text-2xl font-semibold border-b pb-2" style="border-color: var(--text-subtle);">Status of Priority MPA Sites (Green List Candidates)</h2>
+            <div id="data-table-placeholder" class="overflow-x-auto mt-4">
+                <table class="min-w-full divide-y" style="border-color: var(--text-subtle);">
+                    <thead style="background-color: var(--bg-table-header);">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: var(--text-main);">Site Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: var(--text-main);">Type</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: var(--text-main);">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider" style="color: var(--text-main);">Last Assessment</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y" style="border-color: var(--text-subtle);">
+                        <tr class="transition duration-150" style="color: var(--text-main); --tw-bg-opacity: 1;" onmouseover="this.style.backgroundColor=getComputedStyle(document.body).getPropertyValue('--bg-table-row-hover')" onmouseout="this.style.backgroundColor='transparent'">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Turneffe Atoll Marine Reserve</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">Marine Reserve</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-800 text-yellow-300">In Progress</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">June 2024</td>
+                        </tr>
+                        <tr class="transition duration-150" style="color: var(--text-main); --tw-bg-opacity: 1;" onmouseover="this.style.backgroundColor=getComputedStyle(document.body).getPropertyValue('--bg-table-row-hover')" onmouseout="this.style.backgroundColor='transparent'">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Glover's Reef Marine Reserve</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">Marine Reserve</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-800 text-yellow-300">In Progress</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">June 2024</td>
+                        </tr>
+                         <tr class="transition duration-150" style="color: var(--text-main); --tw-bg-opacity: 1;" onmouseover="this.style.backgroundColor=getComputedStyle(document.body).getPropertyValue('--bg-table-row-hover')" onmouseout="this.style.backgroundColor='transparent'">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Half Moon Caye Natural Monument</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">Natural Monument</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-800 text-yellow-300">In Progress</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">June 2024</td>
+                        </tr>
+                        <tr class="transition duration-150" style="color: var(--text-main); --tw-bg-opacity: 1;" onmouseover="this.style.backgroundColor=getComputedStyle(document.body).getPropertyValue('--bg-table-row-hover')" onmouseout="this.style.backgroundColor='transparent'">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">Corozal Bay Wildlife Sanctuary</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">Wildlife Sanctuary</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-800 text-yellow-300">In Progress</span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm" style="color: var(--text-subtle);">June 2024</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Custom Tooltip Element (Hidden by default) -->
+    <div id="custom-tooltip" class="border text-xs px-2 py-1 rounded shadow-lg"
+         style="background-color: var(--bg-header); color: var(--text-main); border-color: var(--text-subtle);">
+        <span id="tooltip-content"></span>
+    </div>
+
+    <!-- JavaScript for Theme Toggle and Tooltip Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Dashboard layout loaded successfully.');
+
+            const body = document.body;
+            const toggleButton = document.getElementById('theme-toggle');
+            const toggleIcon = document.getElementById('toggle-icon');
+
+            // --- Theme Toggle Logic ---
+            const THEME_KEY = 'belizeTheme';
+            
+            // Function to set the theme
+            const setTheme = (isDayMode) => {
+                if (isDayMode) {
+                    body.classList.add('day-mode');
+                    toggleIcon.textContent = '☀️';
+                    toggleButton.lastChild.textContent = ' Day Mode';
+                } else {
+                    body.classList.remove('day-mode');
+                    toggleIcon.textContent = '🌙';
+                    toggleButton.lastChild.textContent = ' Night Mode';
+                }
+                // Save preference
+                localStorage.setItem(THEME_KEY, isDayMode ? 'day' : 'night');
+                // Re-apply button colors after theme change
+                updateButtonStyles();
+            };
+
+            // Update button styles using computed CSS variables
+            const updateButtonStyles = () => {
+                const computedStyle = getComputedStyle(document.body);
+                const accentColor = computedStyle.getPropertyValue('--border-accent');
+                const primaryColor = computedStyle.getPropertyValue('--bg-primary');
+                
+                toggleButton.style.backgroundColor = accentColor;
+                toggleButton.style.color = primaryColor;
+            }
+
+            // Load saved preference or default to night mode
+            const savedTheme = localStorage.getItem(THEME_KEY);
+            const isDayModeInitial = savedTheme === 'day';
+            setTheme(isDayModeInitial);
+
+            // Listener for the toggle button
+            toggleButton.addEventListener('click', () => {
+                const currentIsDayMode = body.classList.contains('day-mode');
+                setTheme(!currentIsDayMode);
+            });
+
+
+            // --- Tooltip Logic ---
+            const tooltip = document.getElementById('custom-tooltip');
+            const tooltipContent = document.getElementById('tooltip-content');
+            const barSegments = document.querySelectorAll('.bar-segment');
+
+            // Function to update tooltip content and position
+            const showTooltip = (event) => {
+                const target = event.target;
+                const percentage = target.getAttribute('data-percentage');
+                const protection = target.getAttribute('data-protection');
+
+                if (percentage && protection) {
+                    // The tooltip will show: Percentage (Protection Type)
+                    tooltipContent.textContent = `${percentage} (${protection})`;
+                    tooltip.classList.add('tooltip-visible');
+                    
+                    // Initial position set (will be refined by mousemove)
+                    updateTooltipPosition(event);
+                }
+            };
+
+            // Function to handle tooltip movement
+            const updateTooltipPosition = (event) => {
+                const padding = 15; // Offset from mouse pointer
+                let x = event.clientX + padding;
+                let y = event.clientY + padding;
+
+                // Simple viewport boundary check
+                if (x + tooltip.offsetWidth > window.innerWidth) {
+                    x = event.clientX - tooltip.offsetWidth - padding;
+                }
+                if (y + tooltip.offsetHeight > window.innerHeight) {
+                    y = event.clientY - tooltip.offsetHeight - padding;
+                }
+
+                tooltip.style.left = `${x}px`;
+                tooltip.style.top = `${y}px`;
+            };
+
+            // Function to hide tooltip
+            const hideTooltip = () => {
+                tooltip.classList.remove('tooltip-visible');
+            };
+
+            // Attach event listeners to all bar segments
+            barSegments.forEach(segment => {
+                segment.addEventListener('mouseover', showTooltip);
+                segment.addEventListener('mousemove', updateTooltipPosition);
+                segment.addEventListener('mouseout', hideTooltip);
+            });
+
+            // Placeholder for Google Apps Script call to fetch data on load:
+            /*
+            try {
+                google.script.run.withSuccessHandler(updateDashboard).getConservationData();
+            } catch (e) {
+                console.error("Error connecting to Google Apps Script:", e);
+                // Display error message in the dashboard if needed
+            }
+            */
+        });
+
+        function updateDashboard(data) {
+            // Function to handle the data returned from the Apps Script backend
+            console.log('Received data from Apps Script:', data);
+            
+            // Example: Update a metric card
+            // document.getElementById('metric-coverage-percent').innerText = data.currentCoverage + '%';
+        }
+
+    </script>
+</body>
+</html>
